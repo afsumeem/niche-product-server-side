@@ -3,6 +3,8 @@ const { MongoClient } = require('mongodb');
 const cors = require('cors');
 const ObjectId = require('mongodb').ObjectId;
 require('dotenv').config();
+const stripe = require('stripe')('sk_test_51Jw9GSII8bV4mbobMKaDxcVkAq9WVtEcugd724d2xSCSMUYQqe1qQHW0m0vYkM72c1tdHoGJTZHk0imIKyAAdJiU00NJy0yJTW');
+const fileUpload = require('express-fileupload')
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -10,6 +12,7 @@ const port = process.env.PORT || 5000;
 //middleaware
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload())
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.7s5ai.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
@@ -32,7 +35,22 @@ async function run() {
 
         //POST API- Add brand
         app.post('/brands', async (req, res) => {
-            const brand = await brandCollection.insertOne(req.body);
+            const name = req.body.name;
+            const desc = req.body.desc;
+            const price = req.body.price;
+            const pic = req.files.image;
+
+            const picData = pic.data;
+            const encodedPic = picData.toString('base64');
+            const imgBuffer = Buffer.from(encodedPic, 'base64');
+            const brandThumb = {
+                name,
+                desc,
+                price,
+                image: imgBuffer
+            };
+            const brand = await brandCollection.insertOne(brandThumb);
+
             res.json(brand);
         });
 
@@ -88,13 +106,22 @@ async function run() {
             res.send(order);
         });
 
+        //
+        app.get("/orders/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await purchaseCollection.findOne(query);
+            res.json(result);
+        })
+
 
         //UPDATE API - booking orders status property
         app.put('/orders/:id', async (req, res) => {
             const order = req.body;
             const options = { upsert: true };
             const updatedOrder = {
-                $set: { status: order.status }
+                $set: { status: order.status, payment: order }
+
             };
             const updateStatus = await purchaseCollection.updateOne({ _id: ObjectId(req.params.id) }, updatedOrder, options);
 
@@ -155,6 +182,19 @@ async function run() {
             console.log(isAdmin);
             res.json({ admin: isAdmin });
         });
+
+
+        //
+        app.post('/create-payment-intent', async (req, res) => {
+            const paymentInfo = req.body;
+            const amount = paymentInfo.price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency: "usd",
+                amount: amount,
+                payment_method_types: ['card']
+            });
+            res.json({ clientSecret: paymentIntent.client_secret })
+        })
 
 
 
