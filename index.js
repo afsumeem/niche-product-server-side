@@ -69,7 +69,7 @@ async function run() {
         _id: ObjectId(req.params.id),
       });
       res.send(productDetails);
-      console.log(productDetails);
+      //   console.log(productDetails);
     });
 
     //Delete API - product brand
@@ -142,7 +142,7 @@ async function run() {
     //POST API- users
     app.post("/users", async (req, res) => {
       const user = await usersCollection.insertOne(req.body);
-      console.log(user);
+      //   console.log(user);
       res.json(user);
     });
 
@@ -182,7 +182,7 @@ async function run() {
       if (user?.role === "admin") {
         isAdmin = true;
       }
-      console.log(isAdmin);
+      //   console.log(isAdmin);
       res.json({ admin: isAdmin });
     });
 
@@ -209,5 +209,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log("server running at port", port);
+  //   console.log("server running at port", port);
 });
