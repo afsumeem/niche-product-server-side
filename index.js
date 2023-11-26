@@ -51,7 +51,9 @@ async function run() {
       //     price,
       //     image: imgBuffer
       // };
+
       // const brand = await brandCollection.insertOne(brandThumb);
+
       const brand = await brandCollection.insertOne(req.body);
       res.json(brand);
     });
